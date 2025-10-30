@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
+const staffSchema = new mongoose.Schema({
   fName: {
     type: String,
     required: [true, 'First name is required'],
@@ -33,10 +33,7 @@ const userSchema = new mongoose.Schema({
   role: {
     type: Number,
     required: [true, 'Role is required'],
-    enum: {
-      values: [85, 96],
-      message: 'Role must be 85 (admin) or 96 (staff)'
-    }
+    default: 96 // Staff role
   },
   password: {
     type: String,
@@ -84,7 +81,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+staffSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
     return next();
   }
@@ -99,22 +96,21 @@ userSchema.pre('save', async function(next) {
 });
 
 // Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
+staffSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Remove password from JSON output and rename _id to userId
-userSchema.methods.toJSON = function() {
+// Remove password from JSON output and rename _id to staffId
+staffSchema.methods.toJSON = function() {
   const obj = this.toObject();
   delete obj.password;
-  // Rename _id to userId
-  obj.userId = obj._id;
+  obj.staffId = obj._id;
   delete obj._id;
   delete obj.__v;
   return obj;
 };
 
-const User = mongoose.model('User', userSchema);
+const Staff = mongoose.model('Staff', staffSchema);
 
-module.exports = User;
+module.exports = Staff;
 

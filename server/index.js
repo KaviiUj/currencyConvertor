@@ -1,6 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const logger = require('./utils/logger');
+const { requestLogger, errorLogger } = require('./middleware/logger');
+const { authenticate } = require('./middleware/auth');
 require('dotenv').config();
 
 const app = express();
@@ -10,6 +13,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Request logging middleware (must be before routes)
+app.use(requestLogger);
+
 // MongoDB Connection
 const connectDB = require('./config/database');
 
@@ -17,15 +23,23 @@ const connectDB = require('./config/database');
 const initializeDB = async () => {
   try {
     await connectDB();
+    logger.success('MongoDB Connected Successfully');
   } catch (error) {
-    console.error('✗ Database initialization failed:', error.message);
+    logger.error('Database initialization failed', { message: error.message, stack: error.stack });
     process.exit(1);
   }
 };
 
 // Routes
 const usersRouter = require('./routes/users');
-app.use('/api/users', usersRouter);
+const authRouter = require('./routes/auth');
+const branchesRouter = require('./routes/branches');
+const staffRouter = require('./routes/staff');
+
+app.use('/api/create-user', usersRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/branches', authenticate, branchesRouter);
+app.use('/api/staff', authenticate, staffRouter);
 
 // Health check route
 app.get('/api/health', (req, res) => {
@@ -36,8 +50,12 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Error logging middleware (must be before other error handlers)
+app.use(errorLogger);
+
 // 404 handler for undefined routes
 app.use((req, res) => {
+  logger.warn('Route not found', { method: req.method, path: req.path, url: req.originalUrl });
   res.status(404).json({
     error: 'Not Found',
     message: `Route ${req.method} ${req.path} not found`
@@ -49,7 +67,7 @@ const PORT = process.env.PORT || 5000;
 
 initializeDB().then(() => {
   app.listen(PORT, () => {
-    console.log(`✓ Server running on port ${PORT}`);
+    logger.success(`Server running on port ${PORT}`);
   });
 });
 
