@@ -1,9 +1,11 @@
 .login-container {
   width: 100%;
+  min-height: 100vh;
   padding: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: var(--color-primary);
 }
 
 .login-card {
@@ -140,8 +142,8 @@
 
 .login-button {
   padding: 14px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--color-black);
+  color: var(--color-primary);
   border: none;
   border-radius: 8px;
   font-size: 16px;
@@ -153,7 +155,7 @@
 
 .login-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
 .login-button:active:not(:disabled) {

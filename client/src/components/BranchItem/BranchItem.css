@@ -1,0 +1,72 @@
+.branch-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.branch-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.branch-item-name {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--color-black);
+}
+
+/* Switch styles */
+.branch-switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+}
+
+.branch-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.branch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 28px;
+}
+
+.branch-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+.branch-switch input:checked + .branch-slider {
+  background-color: #4CAF50;
+}
+
+.branch-switch input:checked + .branch-slider:before {
+  transform: translateX(24px);
+}
+
+.branch-slider:hover {
+  opacity: 0.9;
+}
+

@@ -1,12 +1,13 @@
 const express = require('express');
 const User = require('../models/User');
+const Staff = require('../models/Staff');
 const TokenBlacklist = require('../models/TokenBlacklist');
 const logger = require('../utils/logger');
 const { generateToken, verifyToken, decodeToken } = require('../utils/jwt');
 
 const router = express.Router();
 
-// POST /api/auth/login - User login
+// POST /api/auth/login - User/Staff login
 router.post('/login', async (req, res) => {
   try {
     logger.info('Login attempt', { email: req.body.email });
@@ -25,11 +26,17 @@ router.post('/login', async (req, res) => {
     // Normalize email
     const normalizedEmail = String(email).trim().toLowerCase();
 
-    // Find user by email and include password field
-    const user = await User.findOne({ email: normalizedEmail }).select('+password');
+    // Try to find user in User collection first, then Staff collection
+    let user = await User.findOne({ email: normalizedEmail }).select('+password');
+    let userType = 'User';
     
     if (!user) {
-      logger.warn('Login failed - user not found', { email: normalizedEmail });
+      user = await Staff.findOne({ email: normalizedEmail }).select('+password');
+      userType = 'Staff';
+    }
+    
+    if (!user) {
+      logger.warn('Login failed - user/staff not found', { email: normalizedEmail });
       return res.status(401).json({
         error: 'AuthenticationError',
         message: 'Invalid email or password'
@@ -69,27 +76,43 @@ router.post('/login', async (req, res) => {
       lName: user.lName
     };
 
+    // Add branch info to token if available
+    if (user.branchName) {
+      tokenPayload.branchName = user.branchName;
+      tokenPayload.branchId = user.branchId;
+    }
+
     const accessToken = generateToken(tokenPayload, '9h');
 
     logger.success('Login successful', { 
       userId: user._id.toString(), 
       email: user.email, 
-      role: user.role 
+      role: user.role,
+      userType
     });
+
+    // Build user response
+    const userResponse = {
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+      fName: user.fName,
+      lName: user.lName,
+      isActive: user.isActive,
+      lastLogin: user.lastLogin
+    };
+
+    // Add branch info to response if available
+    if (user.branchName || user.branchId) {
+      userResponse.branchName = user.branchName || null;
+      userResponse.branchId = user.branchId || null;
+    }
 
     // Return response
     return res.status(200).json({
       message: 'Login successful',
       accessToken,
-      user: {
-        userId: user._id.toString(),
-        email: user.email,
-        role: user.role,
-        fName: user.fName,
-        lName: user.lName,
-        isActive: user.isActive,
-        lastLogin: user.lastLogin
-      }
+      user: userResponse
     });
 
   } catch (error) {

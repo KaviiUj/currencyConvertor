@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
+import Toast from '../Toast/Toast';
+import Alert from '../Alert/Alert';
+import { api, formatErrorMessage } from '../../utils/apiHandler';
 
 const Login = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -9,6 +14,17 @@ const Login = () => {
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [showAlert, setShowAlert] = useState(false);
+
+  // Redirect if already logged in
+  React.useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      navigate('/home');
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -52,19 +68,64 @@ const Login = () => {
     }
 
     setIsLoading(true);
+    setErrors({});
 
     try {
-      // API call will be implemented later
-      console.log('Login attempt:', formData);
+      // Login request - no auth needed for login
+      const data = await api.post('/api/auth/login', {
+        email: formData.email,
+        password: formData.password
+      }, false);
+
+      // Store token and role in localStorage
+      if (data.accessToken) {
+        localStorage.setItem('accessToken', data.accessToken);
+      }
+
+      if (data.user && data.user.role !== undefined) {
+        localStorage.setItem('role', data.user.role.toString());
+      }
+
+      // Store user info if needed
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+
+      console.log('Login successful:', data);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Fetch config after successful login
+      try {
+        const configData = await api.get('/api/config');
+        
+        if (configData.config) {
+          // Store config in localStorage
+          localStorage.setItem('config', JSON.stringify(configData.config));
+          console.log('Config fetched and stored:', configData.config);
+        }
+      } catch (configError) {
+        console.error('Error fetching config:', configError);
+        // Store default config on error
+        localStorage.setItem('config', JSON.stringify({ ourFee: 0, specialRate: null }));
+      }
       
-      alert('Login functionality will be implemented later!');
+      // Clear the form and show success toast
+      setFormData({
+        email: '',
+        password: ''
+      });
+
+      setShowToast(true);
+      
+      // Redirect to home after a short delay to show the toast
+      setTimeout(() => {
+        navigate('/home');
+      }, 1500);
       
     } catch (error) {
       console.error('Login error:', error);
-      setErrors({ submit: 'Login failed. Please try again.' });
+      const errorMsg = formatErrorMessage(error);
+      setAlertMessage(errorMsg);
+      setShowAlert(true);
     } finally {
       setIsLoading(false);
     }
@@ -79,9 +140,11 @@ const Login = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
-          {errors.submit && (
-            <div className="error-message">{errors.submit}</div>
-          )}
+          <Alert
+            message={alertMessage}
+            show={showAlert}
+            onClose={() => setShowAlert(false)}
+          />
 
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
@@ -115,16 +178,6 @@ const Login = () => {
             )}
           </div>
 
-          <div className="form-options">
-            <div className="remember-me">
-              <input type="checkbox" id="remember" />
-              <label htmlFor="remember">Remember me</label>
-            </div>
-            <a href="#forgot" className="forgot-password">
-              Forgot password?
-            </a>
-          </div>
-
           <button 
             type="submit" 
             className="login-button"
@@ -133,13 +186,13 @@ const Login = () => {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        <div className="login-footer">
-          <p>
-            Don't have an account? <a href="#signup">Sign up</a>
-          </p>
-        </div>
       </div>
+      
+      <Toast
+        message="Login success"
+        show={showToast}
+        onClose={() => setShowToast(false)}
+      />
     </div>
   );
 };

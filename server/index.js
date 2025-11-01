@@ -35,11 +35,15 @@ const usersRouter = require('./routes/users');
 const authRouter = require('./routes/auth');
 const branchesRouter = require('./routes/branches');
 const staffRouter = require('./routes/staff');
+const configRouter = require('./routes/config');
+const transactionsRouter = require('./routes/transactions');
 
 app.use('/api/create-user', usersRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/branches', authenticate, branchesRouter);
 app.use('/api/staff', authenticate, staffRouter);
+app.use('/api/config', authenticate, configRouter);
+app.use('/api/transactions', authenticate, transactionsRouter);
 
 // Health check route
 app.get('/api/health', (req, res) => {
